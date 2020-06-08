@@ -106,16 +106,24 @@
 ;; MAIN
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun getTypeDB ( file typeDWG / )
+;; db.csv - example
+;  
+;  typeDB      PODWALINA        LP1XLP2
+;  A1          4.00x0.50/0.60   0.40x0.40
+;  A2          3.00x0.50/0.60   0.40x0.40
+;
+
+(defun getTypeDB ( file typeDWG / typeDB)
     (setq data (LM:readcsv file))
     (foreach line data
         (if (and (= (cadr line) (car typeDWG)) (= (caddr line) (cadr typeDWG)) )
             (setq typeDB (car line))
         )
     )
+    (princ typeDB)
 )
 
-(defun getTypeDWG ( ename /  lp1xlp2 podwalina)
+(defun getTypeDWG ( ename / lp1xlp2 podwalina)
     (setq podwalina (LM:getattributevalue ename "PODWALINA"))
     (setq lp1xlp2 (LM:getattributevalue ename "LP1XLP2"))
     (list podwalina lp1xlp2)
@@ -127,11 +135,12 @@
     )
 )
 
-(defun c:setTypes ( / file typeDWG ename i n s x )
+(defun c:setTypes ( / file typeDWG typeDB ename i n s x )
     (princ "setTypes initialized.")
 
     ;; CONNECT CSV DATABASE FILE
-    (setq file (getfiled "Select CSV File" "" "csv" 16)) ;(setq file "C:\\Users\\user\\Desktop\\db.csv")
+    ;(setq file (getfiled "Select CSV File" "" "csv" 16)) ;
+    (setq file "C:\\Users\\user\\Desktop\\db.csv")
     
     ;; MAIN LOOP
     (if (setq s (ssget))
@@ -151,7 +160,8 @@
                 (setq typeDWG (getTypeDWG ename)) ;(princ typeDWG)
                 
                 ;; 2. Get corresponding type from db
-                (setq typeDB (getTypeDB file typeDWG)) ;(princ typeDB)
+                (setq typeDB (getTypeDB file typeDWG)) ;
+                (princ typeDB)
 
                 ;; 3. Set attribute in a block with value acquired from db
                 (setType ename "TYP_POD" typeDB)
@@ -161,4 +171,26 @@
         )
     ) ;; END MAIN LOOP
     (princ)
+)
+
+(defun c:clearTypes ( / )
+    (if (setq s (ssget))
+        (progn
+            (setq i 0
+                  n (sslength s)
+            )
+            (while (< i n)
+                (setq ename (ssname s i)
+                      x (cdr (assoc 0 (entget ename)))
+                      i (1+ i)
+                )
+
+                ;; PUT HERE THE MAGIC ;(print ename)
+
+                (setType ename "TYP_POD" "")
+                
+                ;; END MAGIC
+            )
+        )
+    ) ;; END MAIN LOOP
 )
