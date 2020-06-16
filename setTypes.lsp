@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; UTILITY
+;; Lee Mac --- UTILITY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Get Attribute Value  -  Lee Mac
@@ -105,13 +105,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; MAIN
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;
 ;; db.csv - example
 ;  
 ;  typeDB      PODWALINA        LP1XLP2
 ;  A1          4.00x0.50/0.60   0.40x0.40
 ;  A2          3.00x0.50/0.60   0.40x0.40
-;
+;  B1          2.00x0.50
+;  C1          2.50x0.50/0.60   1.25x1.25  
 
 (defun getTypeDB ( file typeDWG / typeDB)
     (setq data (LM:readcsv file))
@@ -120,12 +121,15 @@
             (setq typeDB (car line))
         )
     )
-    (princ typeDB)
+    (setq typeDB typeDB)
 )
 
 (defun getTypeDWG ( ename / lp1xlp2 podwalina)
     (setq podwalina (LM:getattributevalue ename "PODWALINA"))
     (setq lp1xlp2 (LM:getattributevalue ename "LP1XLP2"))
+    (if (= lp1xlp2 nil)
+        (setq lp1xlp2 "")
+    )
     (list podwalina lp1xlp2)
 )
 
@@ -135,13 +139,16 @@
     )
 )
 
-(defun c:setTypes ( / file typeDWG typeDB ename i n s x )
+(defun c:setTypes ( / file typeDWG typeDB ename i n s x successCounter)
     (princ "setTypes initialized.")
 
+    ;; TEMP VARIABLES
+    (setq succesCounter 0)
+
     ;; CONNECT CSV DATABASE FILE
-    ;(setq file (getfiled "Select CSV File" "" "csv" 16)) ;
-    (setq file "C:\\Users\\user\\Desktop\\db.csv")
-    
+    (setq file (getfiled "Select CSV File" "" "csv" 16)) ; 
+    ;(setq file "O:\\Biuro cP\\NOTES_TYGODNIOWY\\_P2 - wspólny\\LISP\\Rozwiniecia ekranow\\db.csv")
+
     ;; MAIN LOOP
     (if (setq s (ssget))
         (progn
@@ -157,23 +164,30 @@
                 ;; PUT HERE THE MAGIC ;(print ename)
 
                 ;; 1. Get data from object
-                (setq typeDWG (getTypeDWG ename)) ;(princ typeDWG)
+                (setq typeDWG (getTypeDWG ename))
                 
                 ;; 2. Get corresponding type from db
-                (setq typeDB (getTypeDB file typeDWG)) ;
-                (princ typeDB)
+                (setq typeDB (getTypeDB file typeDWG))
 
                 ;; 3. Set attribute in a block with value acquired from db
-                (setType ename "TYP_POD" typeDB)
-                
+                (if (setType ename "TYP_POD" typeDB)
+                    ; increment succesCounter if setting type was succesful 
+                    (setq succesCounter (+ succesCounter 1))
+                )
+
                 ;; END MAGIC
             )
         )
     ) ;; END MAIN LOOP
+    (alert (strcat "Succesful changes: " (itoa succesCounter)))
     (princ)
 )
 
 (defun c:clearTypes ( / )
+
+    ;; TEMP VARIABLES
+    (setq succesCounter 0)
+
     (if (setq s (ssget))
         (progn
             (setq i 0
@@ -187,10 +201,14 @@
 
                 ;; PUT HERE THE MAGIC ;(print ename)
 
-                (setType ename "TYP_POD" "")
+                (if (setType ename "TYP_POD" "")
+                    ; increment succesCounter if setting type was succesful 
+                    (setq succesCounter (+ succesCounter 1))
+                )
                 
                 ;; END MAGIC
             )
         )
     ) ;; END MAIN LOOP
+    (alert (strcat "Succesful changes: " (itoa succesCounter)))
 )
